@@ -73,6 +73,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.4.1"
+  auto_size_text:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: master
+      resolved-ref: f22397751271605ac46e8740d9e48ed631a74cb0
+      url: "https://github.com/simc/auto_size_text.git"
+    source: git
+    version: "3.0.0"
   boolean_selector:
     dependency: transitive
     description:
