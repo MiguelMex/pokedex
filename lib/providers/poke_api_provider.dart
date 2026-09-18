@@ -22,4 +22,20 @@ class PokeApiProvider extends ChangeNotifier {
     final response = await http.get(url);
     return response;
   }
+
+  Future<http.Response> getAbility({String? name, int? id}) async {
+    if(name == null && id ==null){
+      throw ArgumentError('No value given');
+    }
+
+    if (name != null && id != null){
+      throw ArgumentError('More than one value given');
+    }
+
+    final identifier = id?.toString() ?? name!;
+    final url = Uri.https(_baseUrl, "$_apiPatch/ability/$identifier");
+
+    final response = await http.get(url);
+    return response;
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pokedex/models/pokemon_detail_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
+import 'abilities_detail_screen.dart';
 
 class PokemonDetailScreen extends StatefulWidget {
   final int pokemonId;
@@ -21,6 +22,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
   int _currentSpriteIndex = 0;
 
   late final Future<http.Response> _pokemonFuture;
+  
+  //TODO: Adjust view so it doesn't shrink with more content
 
   @override
   void dispose(){
@@ -88,6 +91,69 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
     });
   }
 
+  Color _GetTypeColor(String type){
+    switch (type){
+      case 'fire':     return Colors.orange;
+      case 'water':    return Colors.blue;
+      case 'grass':    return Colors.green;
+      case 'electric': return Colors.yellow;
+      case 'poison':   return Colors.purple;
+      case 'flying':   return Colors.lightBlue;
+      case 'bug':      return Colors.lightGreen;
+      case 'normal':   return Colors.grey;
+      case 'fighting': return Colors.redAccent;
+      case 'psychic': return Colors.purpleAccent;
+      case 'dragon': return Colors.lightBlueAccent;
+      case 'ghost': return Colors.deepPurple;
+      case 'dark': return Colors.black;
+      case 'ground': return Colors.brown;
+      case 'fairy': return Colors.pinkAccent;
+      case 'rock': return Color.fromARGB(255, 85, 59, 30);
+      case 'ice': return Colors.lightBlue;
+      case 'steel': return Colors.blueGrey;
+
+      default: return Colors.white;
+    }
+  }
+
+  Color _GetTypeBorder(String type){
+    switch (type){
+      case 'fire':     return const Color.fromARGB(255, 163, 98, 0);
+      case 'water':    return const Color.fromARGB(255, 20, 88, 143);
+      case 'grass':    return const Color.fromARGB(255, 42, 97, 44);
+      case 'electric': return const Color.fromARGB(255, 170, 157, 40);
+      case 'poison':   return const Color.fromARGB(255, 102, 26, 116);
+      case 'flying':   return const Color.fromARGB(255, 3, 114, 165);
+      case 'bug':      return const Color.fromARGB(255, 87, 122, 46);
+      case 'normal':   return const Color.fromARGB(255, 107, 107, 107);
+      case 'fighting': return const Color.fromARGB(255, 151, 51, 51);
+      case 'psychic': return const Color.fromARGB(255, 118, 35, 133);
+      case 'dragon': return const Color.fromARGB(255, 39, 117, 153);
+      case 'ghost': return const Color.fromARGB(255, 49, 28, 87);
+      case 'dark': return const Color.fromARGB(255, 31, 31, 31);
+      case 'ground': return const Color.fromARGB(255, 73, 52, 44);
+      case 'fairy': return const Color.fromARGB(255, 175, 44, 88);
+      case 'rock': return Color.fromARGB(255, 48, 33, 17);
+      case 'ice': return const Color.fromARGB(255, 3, 109, 158);
+      case 'steel': return const Color.fromARGB(255, 54, 70, 78);
+
+      default: return const Color.fromARGB(255, 153, 151, 151);
+    }
+  }
+
+  String _getStatName(String name){
+    switch (name) {
+      case 'hp': return 'HP';
+      case 'attack': return 'Atk';
+      case 'defense': return 'Def';
+      case 'special-attack': return 'Sp-atk';
+      case 'special-defense': return 'Sp-def';
+      case 'speed': return 'Spd';
+
+      default: return 'error';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +169,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
           } else {
             final pokemonResponse = PokemonDetailResponse.fromRawJson(snapshot.data!.body);
 
+            final abilities = pokemonResponse.abilities;
+
             //TODO: Other chngable variables
             var stats = pokemonResponse.stats;
 
@@ -116,8 +184,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                   child: Container(
                     width: double.maxFinite,
                     decoration: BoxDecoration(
-                      color: Colors.lightGreenAccent,
-                      border: Border(bottom: BorderSide(width: 4, color: Colors.green))
+                      color: _GetTypeColor(pokemonResponse.types[0].type["name"]),
+                      border: Border(bottom: BorderSide(width: 4, color: _GetTypeBorder(pokemonResponse.types[0].type["name"])))
                     ),
                     child: Stack(
                       children: [
@@ -224,24 +292,32 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
 
                 //Type
                 Container(
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.lightGreenAccent,
-                    border: Border.all(
-                      color: Colors.green,
-                      width: 4,
-                    )
-                  ),
+                  width: double.maxFinite,
+                  alignment: Alignment.center,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(5, 1, 5, 1),
-                    child: Text(
-                      pokemonResponse.types[0].type["name"],
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: 
+                        pokemonResponse.types.map((type) {
+                          return Container(
+                            margin: const EdgeInsets.only(left: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _GetTypeColor(type.type["name"]),
+                              border: Border.all(width: 4, color: _GetTypeBorder(type.type["name"])),
+                            ),
+                            child: Text(
+                              type.type["name"][0].toString().toUpperCase() + type.type["name"].toString().substring(1),
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }).toList(),
+                    )
                   ),
                 ),
 
@@ -255,8 +331,9 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                     padding: const EdgeInsetsGeometry.fromLTRB(20, 50, 20, 50),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(width: 4, color: Colors.blueGrey)
+                        color: _GetTypeColor(pokemonResponse.types[0].type["name"]),
+                        border: Border.all(width: 4, color: _GetTypeBorder(pokemonResponse.types[0].type["name"])),
+                        borderRadius: BorderRadiusGeometry.circular(20),
                       ),
                       child: Padding(
                         padding: const EdgeInsetsGeometry.all(15),
@@ -272,7 +349,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                                   SizedBox(
                                     width: 80,
                                     child: Text(
-                                      stat.stat['name'].replaceAll('-', ' ').toUpperCase(),
+                                      _getStatName(stat.stat["name"]),
                                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                                     )
                                   ),
@@ -288,18 +365,72 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                                     child: LinearProgressIndicator(
                                       value: stat.base_stat / 255,
                                       minHeight: 8,
-                                      backgroundColor: Colors.grey[300],
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        stat.base_stat > 100
-                                          ? Colors.green : stat.base_stat > 50
-                                           ? Colors.orange : Colors.red
-                                      ),
+                                      backgroundColor: Colors.grey,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                 ],
                               )
                             );
                           },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                //Abilities
+                Container(
+                  width: double.maxFinite,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 50, 20, 50),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _GetTypeColor(pokemonResponse.types[0].type["name"]),
+                        border: Border.all(width: 4, color: _GetTypeBorder(pokemonResponse.types[0].type["name"])),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: abilities.length,
+                          itemBuilder: (context, index){
+                            final ability = abilities[index];
+                            return Padding(
+                              padding: EdgeInsets.all(5),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(width: 8, color: _GetTypeBorder(pokemonResponse.types[0].type["name"]))
+                                    ),
+                                    padding: EdgeInsets.all(8),
+                                    width: double.maxFinite,
+                                    margin: EdgeInsetsGeometry.fromLTRB(0, 0, 0, 10),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          ability.ability!["name"].toString()[0].toUpperCase() + ability.ability!["name"].toString().substring(1),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      
+                                        AbilitiesDetailScreen(name: ability.ability!["name"].toString()),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
                         ),
                       ),
                     ),
