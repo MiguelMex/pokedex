@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pokedex/models/pokemon_detail_response.dart';
 
 class PokeApiProvider extends ChangeNotifier {
   final String _baseUrl = 'pokeapi.co';
@@ -19,6 +20,31 @@ class PokeApiProvider extends ChangeNotifier {
 
   Future<http.Response> getPokemon(int id) async {
     final url = Uri.http(_baseUrl, "$_apiPatch/pokemon/$id");
+    final response = await http.get(url);
+    return response;
+  }
+
+  Future<http.Response> getPokemonByName(String name) async {
+    final url = Uri.http(_baseUrl, "$_apiPatch/pokemon/$name");
+    final response = await http.get(url);
+    return response;
+  }
+
+  //Not used
+  Future<http.Response> getPokemonDislplay(String name) async {
+    //https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png
+    //https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/132.gif
+
+    //Get the pokemon id
+    final pokemon = await getPokemonByName(name);
+    final id = PokemonDetailResponse.fromRawJson(pokemon.toString()).id;
+    final url = Uri.https('raw.githubusercontent.com','PokeAPI/sprites/master/sprites/pokemon/$id.png');
+    final response = await http.get(url);
+    return response;
+  }
+
+  Future<http.Response> getPokemonSpecies(String speciesId) async {
+    final url = Uri.https(_baseUrl, "$_apiPatch/pokemon-species/$speciesId");
     final response = await http.get(url);
     return response;
   }

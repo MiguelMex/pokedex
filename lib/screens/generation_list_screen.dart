@@ -7,12 +7,21 @@ import 'package:pokedex/models/generation_list_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'package:pokedex/screens/generation_detail_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class GenerationListScreen extends StatelessWidget {
   const GenerationListScreen({super.key});
 
+  void _playMusic() async{
+    final player = AudioPlayer();
+    await player.setReleaseMode(ReleaseMode.loop);
+    player.play(AssetSource('audio/02-title-screen.mp3'));
+  }
+
   @override
   Widget build(BuildContext context) {
+    _playMusic();
+
     return Scaffold(
       appBar: AppBar(
         title: Center(child: const Text('Generaciones')),

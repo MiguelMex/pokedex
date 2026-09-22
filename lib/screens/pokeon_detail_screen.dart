@@ -3,15 +3,16 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pokedex/models/pokemon_detail_response.dart';
+import 'package:pokedex/models/pokemon_species_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'abilities_detail_screen.dart';
 import 'pokemon_species_screen.dart';
 import 'pokemon_type_colors.dart';
 
 class PokemonDetailScreen extends StatefulWidget {
-  final int pokemonId;
-  final String pokemonName;
-  const PokemonDetailScreen({super.key, required this.pokemonId, required this.pokemonName});
+  final int? pokemonId;
+  final String? pokemonName;
+  const PokemonDetailScreen({super.key, this.pokemonId, this.pokemonName});
 
   @override
   State<PokemonDetailScreen> createState() => _PokemonDetailScreenState();
@@ -26,6 +27,9 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
   int _currentSpriteIndex = 0;
 
   late final Future<http.Response> _pokemonFuture;
+  late final Future<http.Response> _speciesFuture;
+
+  final AudioPlayer _audioPlayer = AudioPlayer();
   
   //TODO: Adjust view so it doesn't shrink with more content
 
@@ -38,12 +42,36 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
   @override
   void initState() {
     super.initState();
-    _pokemonFuture = PokeApiProvider().getPokemon(widget.pokemonId);
+    if(widget.pokemonId != null){
+      _pokemonFuture = PokeApiProvider().getPokemon(widget.pokemonId!);
+    } else if (widget.pokemonName != null) {
+      _pokemonFuture = PokeApiProvider().getPokemonByName(widget.pokemonName!);
+    } else {
+      return debugPrint('No pokemon selected');
+    }
+    
+    _speciesFuture = _pokemonFuture.then((response) {
+      final pokemon = PokemonDetailResponse.fromRawJson(response.body);
+      return PokeApiProvider().getPokemonSpecies(pokemon.id.toString());
+    });
+
+    //play cry as soon as the data arrives
+    _pokemonFuture.then((response) {
+      if(!mounted) return;
+      final pokemon = PokemonDetailResponse.fromRawJson(response.body);
+      playCry(pokemon.cries.latest);
+    }).catchError((_) {});
   }
 
-  void playCry(String cry) async{
-    final player = AudioPlayer();
-    await player.play(UrlSource(cry));
+  Future<void> playCry(String cry) async{
+    try{
+      await _audioPlayer.stop();
+      await _audioPlayer.play(UrlSource(cry));
+      // final player = AudioPlayer();
+      // await player.play(UrlSource(cry));
+    } catch(e) {
+      debugPrint('Play failed: $e');
+    }
   }
 
   List<String> _extractSpriteUrls(PokemonDetailResponse response){
@@ -415,9 +443,30 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                   ),
 
                   //Species
-                  PokemonAttributesSection(
-                    pokemon: pokemonResponse,
-                    primaryType: pokemonResponse.types[0].type["name"] as String,
+                  FutureBuilder(
+                    future: _speciesFuture,
+                    builder: (context, speciesSnapshot) {
+                      if (speciesSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.all(40),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      if (speciesSnapshot.hasError || !speciesSnapshot.hasData) {
+                        return const Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Center(child: Text('Could not load species data')),
+                        );
+                      }
+
+                      final speciesResponse =
+                          PokemonSpeciesResponse.fromRawJson(speciesSnapshot.data!.body);
+
+                      return PokemonAttributesSection(
+                        species: speciesResponse,
+                        primaryType: pokemonResponse.types[0].type["name"] as String,
+                      );
+                    }
                   ),
 
                   const SizedBox(height: 40,)
