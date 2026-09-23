@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pokedex/main.dart';
 import 'package:pokedex/models/generation_detail_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
+import 'package:pokedex/screens/pokemon_type_colors.dart';
 import 'package:pokedex/screens/pokeon_detail_screen.dart';
 
 class GenerationDetailScreen extends StatelessWidget {
@@ -31,10 +33,10 @@ class GenerationDetailScreen extends StatelessWidget {
             final generationDetailResponse = GenerationDetailResponse.fromRawJson(snapshot.data!.body);
             final speciesList = generationDetailResponse.pokemonSpecies;
             return GridView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(6),
               itemCount: speciesList.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
+                crossAxisCount: 3,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
                 childAspectRatio: 0.8,
@@ -76,61 +78,75 @@ class _PokemonCard extends StatelessWidget {
     required this.name,
     required this.imageUrl,
     required this.colorScheme,
-    required this.onTap
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: colorScheme.onPrimary,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(5),
       elevation: 4,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(0),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                '#${id.toString().padLeft(3, '0')}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 2,),
-              Text(
-                name[0].toUpperCase() + name.substring(1),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 4,),
+              
               Expanded(
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2,),
-                      )
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.catching_pokemon, color: colorScheme.secondary), 
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: kBlackSoft.withAlpha(30),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Image.network(
+                    alignment: AlignmentGeometry.center,
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2,),
+                        )
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.catching_pokemon, color: colorScheme.secondary), 
+                  ),
                 ),
+              ),
+
+              const SizedBox(height: 4,),
+
+              Column(
+                children: [
+                  Text(
+                    'N.º ${id.toString().padLeft(3, '0')}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: kBlackSoft.withAlpha(100),
+                    ),
+                  ),
+                  const SizedBox(height: 2,),
+                  Text(
+                    name[0].toUpperCase() + name.substring(1),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: kBlackSoft,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:ffi';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pokedex/helpers/audio_helper.dart';
+import 'package:pokedex/main.dart';
 import 'package:pokedex/models/generation_list_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'package:pokedex/screens/generation_detail_screen.dart';
@@ -13,9 +16,39 @@ class GenerationListScreen extends StatelessWidget {
   const GenerationListScreen({super.key});
 
   void _playMusic() async{
-    final player = AudioPlayer();
-    await player.setReleaseMode(ReleaseMode.loop);
-    player.play(AssetSource('audio/02-title-screen.mp3'));
+    AudioHelper.instance.playBackgroundAudio('audio/02-title-screen.mp3');
+  }
+
+  String _getGenerationBackground(String gen){
+    switch(gen){
+      case 'generation-i': return 'assets/images/kanto.jpg';
+      case 'generation-ii': return 'assets/images/johto.png';
+      case 'generation-iii': return 'assets/images/hoenn.webp';
+      case 'generation-iv': return 'assets/images/sinnoh.webp';
+      case 'generation-v': return 'assets/images/teselia.png';
+      case 'generation-vi': return 'assets/images/kalos.png';
+      case 'generation-vii': return 'assets/images/alola.jpg';
+      case 'generation-viii': return 'assets/images/galar.jpg';
+      case 'generation-ix': return 'assets/images/paldea.jpg';
+
+      default: return 'assets/images/kanto.jpg';
+    }
+  }
+
+  String _getGeneration(String gen){
+    switch(gen){
+      case 'generation-i': return 'I';
+      case 'generation-ii': return 'II';
+      case 'generation-iii': return 'III';
+      case 'generation-iv': return 'IV';
+      case 'generation-v': return 'V';
+      case 'generation-vi': return 'VI';
+      case 'generation-vii': return 'VII';
+      case 'generation-viii': return 'VIII';
+      case 'generation-ix': return 'IX';
+
+      default: return 'No gen';
+    }
   }
 
   @override
@@ -24,87 +57,131 @@ class GenerationListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Center(child: const Text('Generaciones')),
+        leading: Icon(
+            Icons.catching_pokemon_sharp,
+            color: Colors.white,
+          ),
+        actions: [
+          Icon(
+            Icons.catching_pokemon_sharp,
+            color: Colors.white,
+          ),
+          SizedBox(width: 12,)
+        ],
+        title: Text(
+          'Generaciones',
+          style: TextStyle(
+            color: kBlackSoft,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
       ),
-      body: FutureBuilder<http.Response>(
-        future: Provider.of<PokeApiProvider>(context, listen: false)
-          .getGenerations(),
-        builder: (context, snapshot){
-          if(snapshot.connectionState == ConnectionState.waiting){
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (snapshot.hasError){
-            return Center( child: Text('Error: ${snapshot.error}'),);
-          } else if(!snapshot.hasData || snapshot.data!.statusCode != 200){
-            return const Center(child: Text('Failed to load generations'),);
-          } else {
-            final generationListResponse = GenerationListResponse.fromJson(json.decode(snapshot.data!.body));
-            return ListView.separated(
-              padding: const EdgeInsets.all(18),
-              itemCount: generationListResponse.results.length,
-              separatorBuilder: (context, index) => 
-                const SizedBox(
-                  height: 20,
-                ),
-              itemBuilder: (context, index) {
-                final generation = generationListResponse.results[index];
-                return Card( 
-                  margin: EdgeInsets.fromLTRB(0, 0, 0, 15),
-                  shadowColor: Colors.deepPurple,
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+      body: Material(
+        child: FutureBuilder<http.Response>(
+          future: Provider.of<PokeApiProvider>(context, listen: false)
+            .getGenerations(),
+          builder: (context, snapshot){
+            if(snapshot.connectionState == ConnectionState.waiting){
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            } else if (snapshot.hasError){
+              return Center( child: Text('Error: ${snapshot.error}'),);
+            } else if(!snapshot.hasData || snapshot.data!.statusCode != 200){
+              return const Center(child: Text('Failed to load generations'),);
+            } else {
+              final generationListResponse = GenerationListResponse.fromJson(json.decode(snapshot.data!.body));
+              return ListView.separated(
+                padding: const EdgeInsets.all(18),
+                itemCount: generationListResponse.results.length,
+                separatorBuilder: (context, index) => 
+                  const SizedBox(
+                    height: 20,
                   ),
-
-                  child: Container( //Color past the inner border
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(180),
+                itemBuilder: (context, index) {
+                  final generation = generationListResponse.results[index];
+                  return Card( 
+                    margin: EdgeInsets.fromLTRB(0, 0, 0, 15),
+                    shadowColor: kRedDark,
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    padding: EdgeInsets.all(0),
-
-                    child: Container( //The inner border
-                      margin: EdgeInsets.all(10),
+        
+                    child: Container( //Color past the inner border
+                      height: MediaQuery.of(context).size.height * 0.2,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(
-                          color: Colors.deepPurpleAccent, 
-                          width: 3,
+                        color: kBlackSoft,
+                        borderRadius: BorderRadius.circular(20),
+                      ),                    
+        
+                      child: Container( //The inner border
+                        margin: EdgeInsets.all(10),
+                        padding: EdgeInsets.all(0),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          border: Border.all(
+                            color: kRedDark.withAlpha(100), 
+                            width: 4,
+                          ),
+                          borderRadius: BorderRadius.circular(20)
                         ),
-                        borderRadius: BorderRadius.circular(20)
-                      ),
-
-                      child: ListTile( //The actual content
-                        title: Text(
-                          generation.name,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 21,
-                            color: Color.fromARGB(255, 44, 6, 114),
+        
+                        child: Card(
+                          margin: EdgeInsetsGeometry.all(0),
+                          clipBehavior: Clip.antiAlias,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context, 
+                                MaterialPageRoute(
+                                  builder: (context) => 
+                                    GenerationDetailScreen(generationId: index +1)
+                                )
+                              );
+                            },
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.asset(
+                                  _getGenerationBackground(generation.name),
+                                  fit: BoxFit.fill,
+                                ),
+        
+                                ColoredBox(color: Colors.black87.withAlpha(100)),
+        
+                                Center(
+                                  child: Text(
+                                    _getGeneration(generation.name),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 30,
+                                      color: kBlack,
+                                      fontStyle: FontStyle.italic,
+                                      shadows: [
+                                        Shadow(
+                                          color: kBlueSoft,
+                                          blurRadius: 20,
+                                        )
+                                      ]
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
                           ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context, 
-                            MaterialPageRoute(
-                              builder: (context) => 
-                                GenerationDetailScreen(generationId: index +1)
-                            )
-                          );
-                        },
                       ),
-                    ),
-                  )
-                );
-              },
-            );
-          }
-        },
+                    )
+                  );
+                },
+              );
+            }
+          },
+        ),
       ),
     );
   }
