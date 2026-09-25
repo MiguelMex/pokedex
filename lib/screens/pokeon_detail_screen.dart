@@ -2,12 +2,14 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pokedex/main.dart';
 import 'package:pokedex/models/pokemon_detail_response.dart';
 import 'package:pokedex/models/pokemon_species_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'abilities_detail_screen.dart';
 import 'pokemon_species_screen.dart';
 import 'pokemon_type_colors.dart';
+import 'package:pokedex/helpers/audio_helper.dart';
 
 class PokemonDetailScreen extends StatefulWidget {
   final int? pokemonId;
@@ -59,19 +61,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
     _pokemonFuture.then((response) {
       if(!mounted) return;
       final pokemon = PokemonDetailResponse.fromRawJson(response.body);
-      playCry(pokemon.cries.latest);
+      AudioHelper.instance.playSoundEffect(pokemon.cries.latest, true);
     }).catchError((_) {});
-  }
-
-  Future<void> playCry(String cry) async{
-    try{
-      await _audioPlayer.stop();
-      await _audioPlayer.play(UrlSource(cry));
-      // final player = AudioPlayer();
-      // await player.play(UrlSource(cry));
-    } catch(e) {
-      debugPrint('Play failed: $e');
-    }
   }
 
   List<String> _extractSpriteUrls(PokemonDetailResponse response){
@@ -138,7 +129,23 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: Text(
+          widget.pokemonName.toString()[0].toUpperCase()+widget.pokemonName.toString().substring(1),
+          style: TextStyle(
+            color: kBlackSoft,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          Icon(
+            Icons.catching_pokemon_sharp,
+            color: Colors.white,
+          ),
+          SizedBox(width: 12,),
+        ],
+      ),
       body: SingleChildScrollView(
         child: FutureBuilder(
           future: _pokemonFuture,
@@ -246,7 +253,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                             child: Padding(
                               padding: const EdgeInsets.all(10.0),
                               child: IconButton(
-                                onPressed: () => playCry(pokemonResponse.cries.latest),
+                                onPressed: () => AudioHelper.instance.playSoundEffect(pokemonResponse.cries.latest, true),
                                 icon: const Icon(Icons.audiotrack),
                                 iconSize: 50,
                                 color: Colors.black87,

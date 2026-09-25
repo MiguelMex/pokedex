@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pokedex/helpers/audio_helper.dart';
 import 'package:pokedex/main.dart';
 import 'package:pokedex/models/generation_detail_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
@@ -18,7 +19,21 @@ class GenerationDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text('Generacion $generationId'),
+        title: Text(
+          'Generacion $generationId',
+          style: TextStyle(
+            color: kBlackSoft,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          Icon(
+            Icons.catching_pokemon_sharp
+          ),
+          SizedBox(width: 12,)
+        ],
+        centerTitle: true,
       ),
       body: FutureBuilder(
         future: PokeApiProvider().getGenerationDetail(generationId),
@@ -49,6 +64,7 @@ class GenerationDetailScreen extends StatelessWidget {
                   imageUrl: _spriteUrl(species.id),
                   colorScheme: colorScheme,
                   onTap: () {
+                    AudioHelper.instance.playSoundEffect('audio/pokemon-exclamation-mark-sound-effect.mp3', false);
                     Navigator.push(
                       context,
                       MaterialPageRoute(

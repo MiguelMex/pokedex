@@ -1,7 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pokedex/helpers/audio_helper.dart';
@@ -10,13 +7,12 @@ import 'package:pokedex/models/generation_list_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'package:pokedex/screens/generation_detail_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 class GenerationListScreen extends StatelessWidget {
   const GenerationListScreen({super.key});
 
   void _playMusic() async{
-    AudioHelper.instance.playBackgroundAudio('audio/02-title-screen.mp3');
+    
   }
 
   String _getGenerationBackground(String gen){
@@ -37,15 +33,15 @@ class GenerationListScreen extends StatelessWidget {
 
   String _getGeneration(String gen){
     switch(gen){
-      case 'generation-i': return 'I';
-      case 'generation-ii': return 'II';
-      case 'generation-iii': return 'III';
-      case 'generation-iv': return 'IV';
-      case 'generation-v': return 'V';
-      case 'generation-vi': return 'VI';
-      case 'generation-vii': return 'VII';
-      case 'generation-viii': return 'VIII';
-      case 'generation-ix': return 'IX';
+      case 'generation-i': return 'Kanto';
+      case 'generation-ii': return 'Johto';
+      case 'generation-iii': return 'Hoenn';
+      case 'generation-iv': return 'Sinnoh';
+      case 'generation-v': return 'Teselia';
+      case 'generation-vi': return 'Kalos';
+      case 'generation-vii': return 'Alola';
+      case 'generation-viii': return 'Galar';
+      case 'generation-ix': return 'Paldea';
 
       default: return 'No gen';
     }
@@ -103,7 +99,7 @@ class GenerationListScreen extends StatelessWidget {
                   final generation = generationListResponse.results[index];
                   return Card( 
                     margin: EdgeInsets.fromLTRB(0, 0, 0, 15),
-                    shadowColor: kRedDark,
+                    shadowColor: kBlack,
                     elevation: 8,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -112,7 +108,7 @@ class GenerationListScreen extends StatelessWidget {
                     child: Container( //Color past the inner border
                       height: MediaQuery.of(context).size.height * 0.2,
                       decoration: BoxDecoration(
-                        color: kBlackSoft,
+                        color: kBlack.withAlpha(100),
                         borderRadius: BorderRadius.circular(20),
                       ),                    
         
@@ -122,7 +118,7 @@ class GenerationListScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           border: Border.all(
-                            color: kRedDark.withAlpha(100), 
+                            color: kBlueSoft, 
                             width: 4,
                           ),
                           borderRadius: BorderRadius.circular(20)
@@ -134,6 +130,7 @@ class GenerationListScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           child: InkWell(
                             onTap: () {
+                              AudioHelper.instance.playSoundEffect('audio/shiny-pokemon.mp3', false);
                               Navigator.push(
                                 context, 
                                 MaterialPageRoute(
@@ -150,7 +147,7 @@ class GenerationListScreen extends StatelessWidget {
                                   fit: BoxFit.fill,
                                 ),
         
-                                ColoredBox(color: Colors.black87.withAlpha(100)),
+                                ColoredBox(color: kBlack.withAlpha(60)),
         
                                 Center(
                                   child: Text(
@@ -159,11 +156,11 @@ class GenerationListScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 30,
-                                      color: kBlack,
+                                      color: Colors.white,
                                       fontStyle: FontStyle.italic,
                                       shadows: [
                                         Shadow(
-                                          color: kBlueSoft,
+                                          color: kBlackSoft,
                                           blurRadius: 20,
                                         )
                                       ]

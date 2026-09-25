@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:pokedex/helpers/audio_helper.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'package:pokedex/screens/generation_list_screen.dart';
+import 'package:pokedex/screens/title_screen.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await  AudioHelper.instance.init();
+  debugPrint('After init, bg state= ${AudioHelper.instance}');
+  await AudioHelper.instance.playBackgroundAudio('audio/02-title-screen.mp3');
+  debugPrint('After play call');
   runApp(const AppState());
 }
 
@@ -61,9 +65,9 @@ class MyApp extends StatelessWidget {
           secondaryContainer: kBlueSoft,
           onSecondaryContainer: kBlack,
 
-          surface:            kBlack,
+          surface:            kBlackSoft,
           onSurface:          Colors.white,
-          surfaceContainer:   kBlackSoft,
+          surfaceContainer:   kBlack,
 
           outline:            kBlue,
         ),
@@ -84,7 +88,6 @@ class MyApp extends StatelessWidget {
         cardTheme: CardThemeData(
           color: kBlackSoft,
           elevation: 4,
-          shadowColor: kRed,
           surfaceTintColor: Colors.transparent,
           margin: const EdgeInsets.fromLTRB(0, 0, 0, 15),
         ),
@@ -124,7 +127,7 @@ class MyApp extends StatelessWidget {
           thickness: 1,
         ),
       ),
-      home: const GenerationListScreen(),
+      home: const TitleScreen(),
     );
   }
 }
