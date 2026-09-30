@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -36,7 +38,7 @@ class AudioHelper {
   static final AudioContext _sfxContext = AudioContext(
     android: AudioContextAndroid(
       contentType: AndroidContentType.sonification,
-      usageType: AndroidUsageType.assistanceSonification,
+      usageType: AndroidUsageType.game,
       audioFocus: AndroidAudioFocus.none,
       stayAwake: false,
     ),
@@ -123,7 +125,24 @@ class AudioHelper {
     final player = _sfxPool[slot];
 
     final source = online ? UrlSource(asset) : AssetSource(asset);
-    await player.play(source, mode: PlayerMode.lowLatency);
+    final done = Completer<void>();
+    late final StreamSubscription<PlayerState> sub;
+    sub = player.onPlayerStateChanged.listen((state){
+      if (state == PlayerState.completed || state == PlayerState.stopped){
+        if(!done.isCompleted) done.complete();
+        sub.cancel();
+      }
+    });
+    
+    try{
+      await player.play(source, mode: PlayerMode.mediaPlayer);
+      await done.future;
+    } catch(e,s){
+      if(!done.isCompleted) done.complete();
+      sub.cancel();
+      rethrow;
+    }
+
   }
 
   Future<void> dispose() async {

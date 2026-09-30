@@ -15,15 +15,12 @@ class TitleScreen extends StatelessWidget {
     return Scaffold(
       body: InkWell(
         onTap: () async{
-          await AudioHelper.instance.playSoundEffect('audio/shiny-pokemon.mp3', false).then(
-            (audio) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => GenerationListScreen())
-              );
-            }
+          await AudioHelper.instance.playSoundEffect('audio/shiny-pokemon.mp3', false);
+          if(!context.mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => GenerationListScreen())
           );
-          
         },
         child: Stack(
           fit: StackFit.expand,

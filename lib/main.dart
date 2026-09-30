@@ -1,8 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pokedex/helpers/audio_helper.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
-import 'package:pokedex/screens/generation_list_screen.dart';
 import 'package:pokedex/screens/title_screen.dart';
 import 'package:provider/provider.dart';
 

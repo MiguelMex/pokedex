@@ -293,20 +293,20 @@ class Sprites{
 }
 
 class Cries{
-  final String latest;
-  final String legacy;
+  final String? latest;
+  final String? legacy;
 
   Cries({
-    required this.latest,
-    required this.legacy
+    this.latest,
+    this.legacy
   });
 
   factory Cries.fromRawJson(String str) => Cries.fromJson(json.decode(str));
 
   factory Cries.fromJson(Map<String, dynamic> json){
     return Cries(
-      latest: json['latest'],
-      legacy: json['legacy'],
+      latest: json['latest'] as String?,
+      legacy: json['legacy'] as String?,
     );
   }
 }

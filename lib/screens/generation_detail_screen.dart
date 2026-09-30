@@ -63,12 +63,13 @@ class GenerationDetailScreen extends StatelessWidget {
                   name: species.name,
                   imageUrl: _spriteUrl(species.id),
                   colorScheme: colorScheme,
-                  onTap: () {
-                    AudioHelper.instance.playSoundEffect('audio/pokemon-exclamation-mark-sound-effect.mp3', false);
+                  onTap: () async {
+                    await AudioHelper.instance.playSoundEffect('audio/pokemon-exclamation-mark-sound-effect.mp3', false);
+                    if(!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => PokemonDetailScreen(pokemonId: species.id, pokemonName: species.name),
+                        builder: (context) => PokemonDetailScreen(pokemonId: species.id, pokemonName: species.name, showSpecies: true,),
                       )
                     );
                   }

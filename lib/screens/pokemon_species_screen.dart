@@ -5,23 +5,24 @@ import 'package:pokedex/screens/pokemon_type_colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:pokedex/screens/pokeon_detail_screen.dart';
 
-//TODO: Change the future builder here to make it more modular
-//TODO: Adjust views for better look
-
 /// Renders the Pokédex-species attributes of a Pokémon:
 /// description, profile, breeding, flags, and varieties.
 ///
 ///
 /// Designed to be dropped into a [Column] on the detail screen.
 class PokemonAttributesSection extends StatelessWidget {
-  final PokemonSpeciesResponse species;
   final String primaryType;
+  final String speciesUrl;
 
-  const PokemonAttributesSection({
+  PokemonAttributesSection({
     super.key,
-    required this.species,
     required this.primaryType,
+    required this.speciesUrl,
+    this.species
   });
+
+  PokemonSpeciesResponse? species;
+  Future<http.Response>? _speciesFuture;
 
   // ---------------- helpers ----------------
 
@@ -69,7 +70,7 @@ class PokemonAttributesSection extends StatelessWidget {
 
   /// Prefer the newest English entry; falls back to any English entry.
   String _englishFlavorText() {
-    final english = species.flavor_text_entries
+    final english = species!.flavor_text_entries
         .where((e) => e.language['name'] == 'en')
         .toList();
     if (english.isEmpty) return 'No description available.';
@@ -77,20 +78,20 @@ class PokemonAttributesSection extends StatelessWidget {
   }
 
   List _allEnglishFlavorText(){
-    final english = species.flavor_text_entries.where((e) => e.language['name'] == 'en').toList();
+    final english = species!.flavor_text_entries.where((e) => e.language['name'] == 'en').toList();
     if (english.isEmpty) return ['No description available'];
     return english;
   }
 
   String _englishGenus() {
-    final entry = species.genera
+    final entry = species!.genera
         .where((g) => g.language['name'] == 'en')
         .toList();
     return entry.isEmpty ? '—' : entry.first.genus;
   }
 
   List _allEnglishGenus() {
-    final entry = species.genera
+    final entry = species!.genera
       .where((g) => g.language['name'] == 'en').toList();
 
     return entry.isEmpty ? ['No english entry'] : entry;
@@ -110,7 +111,7 @@ class PokemonAttributesSection extends StatelessWidget {
       '${((counter + 1) * 255)} steps  (${counter + 1} cycles)';
 
   String _formatGrowthRate() =>
-      _capitalize((species.growth_rate['name'] as String? ?? '—')
+      _capitalize((species!.growth_rate['name'] as String? ?? '—')
           .replaceAll('-', ' '));
 
   Widget _infoRow(String label, String value) {
@@ -172,37 +173,62 @@ class PokemonAttributesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allGenus = _allEnglishGenus();
-    final genus = _englishGenus();
-    final flavor = _englishFlavorText();
-    final allFlavor = _allEnglishFlavorText();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ---- Description ----
-        _sectionCard(
-          title: 'Pokédex Entry',
-          child: Column(
-            spacing: 10,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                genus,
-                style: const TextStyle(
-                  fontStyle: FontStyle.italic,
-                  fontSize: 13,
-                ),
+    return FutureBuilder<http.Response>(
+      future: PokeApiProvider().getPokemonSpecies(speciesUrl),
+      builder: (context, snapshot){
+          debugPrint('[Detail] state=${snapshot.connectionState} '
+          'hasData=${snapshot.hasData} hasError=${snapshot.hasError} '
+          'error=${snapshot.error}');
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(40),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+          return _sectionCard(
+            title: 'Species',
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'No species information available for this form.',
+                style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
               ),
-              Container(
-                alignment: Alignment.center,
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: ListView.builder(
-                  itemCount: allFlavor.length,
-                  itemBuilder: (context, index) {
-                    final flavor = allFlavor[index];
-                    return Expanded(
-                      child: Container(
+            ),
+          );
+        }
+
+        species = PokemonSpeciesResponse.fromRawJson(snapshot.data!.body);
+
+        final genus = _englishGenus();
+        final allFlavor = _allEnglishFlavorText();
+
+        return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ---- Description ----
+          _sectionCard(
+            title: 'Pokédex Entry',
+            child: Column(
+              spacing: 10,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  genus,
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    fontSize: 13,
+                  ),
+                ),
+                Container(
+                  alignment: Alignment.center,
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: ListView.builder(
+                    itemCount: allFlavor.length,
+                    itemBuilder: (context, index) {
+                      final flavor = allFlavor[index];
+                      return Container(
                         decoration: BoxDecoration(
                           border: Border.all(width: 8, color: getTypeBorder(primaryType)),
                           borderRadius: BorderRadius.circular(20),
@@ -232,129 +258,130 @@ class PokemonAttributesSection extends StatelessWidget {
                             SizedBox(height: 10,)
                           ],
                         ),
-                      ),
-                    );
-                  }),
-              )
-            ],
+                      );
+                    }),
+                )
+              ],
+            ),
           ),
-        ),
-
-        // ---- Profile ----
-        _sectionCard(
-          title: 'Profile',
-          child: Column(
-            children: [
-              _infoRow('Generation', _getGeneration(species.generation['name'])),
-              _infoRow('Habitat', _capitalize(species.habitat?['name'] ?? 'Unknown')),
-              _infoRow('Color', _capitalize(species.color['name'] ?? '—')),
-              _infoRow('Shape', _capitalize(species.shape['name'] ?? '—')),
-              _infoRow('Growth Rate', _formatGrowthRate()),
-            ],
+      
+          // ---- Profile ----
+          _sectionCard(
+            title: 'Profile',
+            child: Column(
+              children: [
+                _infoRow('Generation', _getGeneration(species!.generation['name'])),
+                _infoRow('Habitat', _capitalize(species!.habitat?['name'] ?? 'Unknown')),
+                _infoRow('Color', _capitalize(species!.color['name'] ?? '—')),
+                _infoRow('Shape', _capitalize(species!.shape['name'] ?? '—')),
+                _infoRow('Growth Rate', _formatGrowthRate()),
+              ],
+            ),
           ),
-        ),
-
-        // ---- Breeding ----
-        _sectionCard(
-          title: 'Breeding',
-          child: Column(
-            children: [
-              _infoRow('Gender', _formatGenderRate(species.gender_rate)),
-              _infoRow('Capture Rate', species.capture_rate.toString()),
-              _infoRow('Base Happiness', species.base_happiness.toString()),
-              _infoRow('Hatch Time', _formatHatchCounter(species.hatch_counter)),
-              _infoRow(
-                'Egg Groups',
-                species.egg_groups.isEmpty
-                    ? '—'
-                    : species.egg_groups
-                        .map((e) => _capitalize(e['name'] as String? ?? ''))
-                        .join(', '),
-              ),
-            ],
-          ),
-        ),
-
-        // ---- Varieties ----
-       if (species.varieties.isNotEmpty)
-        _sectionCard(
-          title: 'Other forms',
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.15,
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: MediaQuery.of(context).size.width - 80, // card padding
+      
+          // ---- Breeding ----
+          _sectionCard(
+            title: 'Breeding',
+            child: Column(
+              children: [
+                _infoRow('Gender', _formatGenderRate(species!.gender_rate)),
+                _infoRow('Capture Rate', species!.capture_rate.toString()),
+                _infoRow('Base Happiness', species!.base_happiness.toString()),
+                _infoRow('Hatch Time', _formatHatchCounter(species!.hatch_counter)),
+                _infoRow(
+                  'Egg Groups',
+                  species!.egg_groups.isEmpty
+                      ? '—'
+                      : species!.egg_groups
+                          .map((e) => _capitalize(e['name'] as String? ?? ''))
+                          .join(', '),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center, // ← centers when few
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: species.varieties.map((variety) {
-                    final pokemonUrl = variety.pokemon['url'] as String;
-                    final id = _idFromUrl(pokemonUrl);
-                    final spriteUrl = id == null
-                        ? null
-                        : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$id.png';
-
-                    return InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => PokemonDetailScreen(pokemonName: variety.pokemon['name'],),),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (spriteUrl != null)
-                              Image.network(spriteUrl, width: 80, height: 80, fit: BoxFit.contain),
-                            const SizedBox(height: 10),
-                            Text(_capitalize(variety.pokemon['name'].toString())),
-                          ],
+              ],
+            ),
+          ),
+      
+          // ---- Varieties ----
+         if (species!.varieties.isNotEmpty)
+          _sectionCard(
+            title: 'Other forms',
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.15,
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: MediaQuery.of(context).size.width - 80, // card padding
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center, // ← centers when few
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: species!.varieties.map((variety) {
+                      final pokemonUrl = variety.pokemon['url'] as String;
+                      final id = _idFromUrl(pokemonUrl);
+                      final spriteUrl = id == null
+                          ? null
+                          : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$id.png';
+      
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => PokemonDetailScreen(pokemonName: variety.pokemon['name'], showSpecies: true,),),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (spriteUrl != null)
+                                Image.network(spriteUrl, width: 80, height: 80, fit: BoxFit.contain),
+                              const SizedBox(height: 10),
+                              Text(_capitalize(variety.pokemon['name'].toString())),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-
-        // ---- Evolves From ----
-        if (species.evolves_from_species != null)
-          _sectionCard(
-            title: 'Pre evolution',
-            child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PokemonDetailScreen(pokemonName: species.evolves_from_species!["name"])),
-              ),
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.20,
-                width: double.maxFinite,
-                child: Padding(
-                  padding: const EdgeInsetsGeometry.all(8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    spacing: 5,
-                    children: [
-                      Image.network(_getUrl(species.evolves_from_species!["url"])),
-                      Text(_capitalize(species.evolves_from_species!["name"])),
-                    ],
+      
+          // ---- Evolves From ----
+          if (species!.evolves_from_species != null)
+            _sectionCard(
+              title: 'Pre evolution',
+              child: InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => PokemonDetailScreen(pokemonName: species!.evolves_from_species!["name"], showSpecies: true,)),
+                ),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.20,
+                  width: double.maxFinite,
+                  child: Padding(
+                    padding: const EdgeInsetsGeometry.all(8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      spacing: 5,
+                      children: [
+                        Image.network(_getUrl(species!.evolves_from_species!["url"])),
+                        Text(_capitalize(species!.evolves_from_species!["name"])),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            )
-          ),
-      ],
+              )
+            ),
+        ],
+      );
+      }
     );
   }
 }

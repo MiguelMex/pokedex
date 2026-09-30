@@ -129,8 +129,9 @@ class GenerationListScreen extends StatelessWidget {
                           clipBehavior: Clip.antiAlias,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           child: InkWell(
-                            onTap: () {
-                              AudioHelper.instance.playSoundEffect('audio/shiny-pokemon.mp3', false);
+                            onTap: () async {
+                              await AudioHelper.instance.playSoundEffect('audio/shiny-pokemon.mp3', false);
+                              if(!context.mounted) return;
                               Navigator.push(
                                 context, 
                                 MaterialPageRoute(

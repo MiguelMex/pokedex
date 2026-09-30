@@ -1,4 +1,6 @@
-import 'package:audioplayers/audioplayers.dart';
+import 'dart:io';
+import 'dart:async';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -6,6 +8,7 @@ import 'package:pokedex/main.dart';
 import 'package:pokedex/models/pokemon_detail_response.dart';
 import 'package:pokedex/models/pokemon_species_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
+import 'package:pokedex/screens/error_screen.dart';
 import 'abilities_detail_screen.dart';
 import 'pokemon_species_screen.dart';
 import 'pokemon_type_colors.dart';
@@ -14,13 +17,19 @@ import 'package:pokedex/helpers/audio_helper.dart';
 class PokemonDetailScreen extends StatefulWidget {
   final int? pokemonId;
   final String? pokemonName;
-  const PokemonDetailScreen({super.key, this.pokemonId, this.pokemonName});
+  final bool showSpecies;
+  const PokemonDetailScreen({super.key, this.pokemonId, this.pokemonName, required this.showSpecies});
 
   @override
   State<PokemonDetailScreen> createState() => _PokemonDetailScreenState();
 }
 
+//TODO: Solucionar errores en pokemones de generaciones avanzadas
+//TODO: Mostrar una pantalla de error para evitar que la aplicación crashee
+//TODO
+
 class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
+  static const Duration _timeout = Duration(seconds: 10);
   String selectedSprite = '';
   List<String> spritesUrl = [];
 
@@ -28,41 +37,93 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
   final List<String> _spriteUrls = [];
   int _currentSpriteIndex = 0;
 
-  late final Future<http.Response> _pokemonFuture;
-  late final Future<http.Response> _speciesFuture;
-
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  
-  //TODO: Adjust view so it doesn't shrink with more content
+  Future<http.Response>? _pokemonFuture;
+  Future<http.Response>? _speciesFuture;
 
   @override
   void dispose(){
+    
     _spriteController.dispose();
     super.dispose();
+  }
+
+  //LOADING
+  Future<T> _withTimeout<T>(
+    Future<T> future,{
+      Duration? duration,
+    }) {
+      final limit =  duration ?? _timeout;
+      final completer = Completer<T>();
+      Timer? timer;
+
+      timer = Timer(limit, (){
+        if(!completer.isCompleted){
+          completer.completeError(
+            TimeoutException('Request timed out after ${limit.inSeconds}s', limit),
+          );
+        }
+      });
+
+      future.then(
+        (value) {
+          timer?.cancel();
+          if(!completer.isCompleted) completer.complete(value);
+        },
+        onError: (Object error, StackTrace stackTrace){
+          timer?.cancel();
+          if(!completer.isCompleted) completer.completeError(error, stackTrace);
+        }
+      );
+
+      return completer.future;
+    }
+
+  void _loadData(){
+    _spriteUrls.clear();
+    _currentSpriteIndex = 0;
+
+    if(widget.pokemonId == null && widget.pokemonName == null){
+      final error = ArgumentError('No pokemon name was provided');
+      _pokemonFuture = Future.error(error);
+      _speciesFuture = Future.error(error);
+      return;
+    }
+
+    final pokemonCall = widget.pokemonId != null 
+      ? PokeApiProvider().getPokemon(widget.pokemonId!)
+      : PokeApiProvider().getPokemonByName(widget.pokemonName!);
+    
+    _pokemonFuture = _withTimeout(pokemonCall);
+
+    _speciesFuture = _withTimeout(
+      _pokemonFuture!.then((response) {
+          final pokemon = PokemonDetailResponse.fromRawJson(response.body);
+          return PokeApiProvider().getPokemonSpecies(pokemon.species.url);
+        }),
+    );
+
+    // Auto-play cry when data arrives.
+    _pokemonFuture!
+        .then((response) {
+          if (!mounted) return;
+          final pokemon = PokemonDetailResponse.fromRawJson(response.body);
+          final cryUrl = pokemon.cries.latest;
+          if(cryUrl == null) return;
+          AudioHelper.instance.playSoundEffect(cryUrl, true);
+        })
+        .catchError((_) {
+          // Silent — the FutureBuilder surfaces real errors on-screen.
+        });
+  }
+
+  void _retry(){
+    setState(_loadData);
   }
 
   @override
   void initState() {
     super.initState();
-    if(widget.pokemonId != null){
-      _pokemonFuture = PokeApiProvider().getPokemon(widget.pokemonId!);
-    } else if (widget.pokemonName != null) {
-      _pokemonFuture = PokeApiProvider().getPokemonByName(widget.pokemonName!);
-    } else {
-      return debugPrint('No pokemon selected');
-    }
-    
-    _speciesFuture = _pokemonFuture.then((response) {
-      final pokemon = PokemonDetailResponse.fromRawJson(response.body);
-      return PokeApiProvider().getPokemonSpecies(pokemon.id.toString());
-    });
-
-    //play cry as soon as the data arrives
-    _pokemonFuture.then((response) {
-      if(!mounted) return;
-      final pokemon = PokemonDetailResponse.fromRawJson(response.body);
-      AudioHelper.instance.playSoundEffect(pokemon.cries.latest, true);
-    }).catchError((_) {});
+    _loadData();
   }
 
   List<String> _extractSpriteUrls(PokemonDetailResponse response){
@@ -153,15 +214,31 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
             if (snapshot.connectionState == ConnectionState.waiting){
               return Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError){
-              return Center(child: Text('Error: ${snapshot.error}'),);
+              return const Center(
+                child: ErrorScreen()
+              );
             } else if (!snapshot.hasData){
-              return const Center(child: Text('No data :('));
+              return const Center(
+                child: ErrorScreen(),
+              );
             } else {
-              final pokemonResponse = PokemonDetailResponse.fromRawJson(snapshot.data!.body);
+              final PokemonDetailResponse pokemonResponse;
+              try{
+                pokemonResponse = PokemonDetailResponse.fromRawJson(snapshot.data!.body);
+              } catch( e, st){
+                debugPrint('[Detail] PARSE FAILED: $e\n$st');
+                return const Center(child: ErrorScreen());
+              }
+
+              debugPrint('[Detail] parsed name=${pokemonResponse.name}');
+              debugPrint('[Detail] types.len=${pokemonResponse.types.length}');
+              debugPrint('[Detail] sprites.other.keys=${pokemonResponse.sprites.other.keys}');
+              debugPrint('[Detail] sprites.versions.keys=${pokemonResponse.sprites.versions.keys}');
+              debugPrint('[Detail] cries.latest=${pokemonResponse.cries.latest}');
+              debugPrint('[Detail] species.url=${pokemonResponse.species.url}');
         
               final abilities = pokemonResponse.abilities;
-        
-              //TODO: Other chngable variables
+      
               var stats = pokemonResponse.stats;
         
               if(_spriteUrls.isEmpty){
@@ -253,7 +330,11 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                             child: Padding(
                               padding: const EdgeInsets.all(10.0),
                               child: IconButton(
-                                onPressed: () => AudioHelper.instance.playSoundEffect(pokemonResponse.cries.latest, true),
+                                onPressed: () {
+                                  final cry = pokemonResponse.cries.latest;
+                                  if (cry == null) return;
+                                  AudioHelper.instance.playSoundEffect(cry, true);
+                                },
                                 icon: const Icon(Icons.audiotrack),
                                 iconSize: 50,
                                 color: Colors.black87,
@@ -450,31 +531,11 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen>{
                   ),
 
                   //Species
-                  FutureBuilder(
-                    future: _speciesFuture,
-                    builder: (context, speciesSnapshot) {
-                      if (speciesSnapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(
-                          padding: EdgeInsets.all(40),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      if (speciesSnapshot.hasError || !speciesSnapshot.hasData) {
-                        return const Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Center(child: Text('Could not load species data')),
-                        );
-                      }
-
-                      final speciesResponse =
-                          PokemonSpeciesResponse.fromRawJson(speciesSnapshot.data!.body);
-
-                      return PokemonAttributesSection(
-                        species: speciesResponse,
-                        primaryType: pokemonResponse.types[0].type["name"] as String,
-                      );
-                    }
-                  ),
+                  if(widget.showSpecies)
+                    PokemonAttributesSection(
+                      primaryType: pokemonResponse.types[0].type["name"] as String,
+                      speciesUrl: pokemonResponse.species.url,
+                    ),
 
                   const SizedBox(height: 40,)
                 ],
