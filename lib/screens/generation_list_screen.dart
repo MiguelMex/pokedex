@@ -6,6 +6,7 @@ import 'package:pokedex/main.dart';
 import 'package:pokedex/models/generation_list_response.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'package:pokedex/screens/generation_detail_screen.dart';
+import 'package:pokedex/screens/music_config_screen.dart';
 import 'package:provider/provider.dart';
 
 class GenerationListScreen extends StatelessWidget {
@@ -58,9 +59,17 @@ class GenerationListScreen extends StatelessWidget {
             color: Colors.white,
           ),
         actions: [
-          Icon(
-            Icons.catching_pokemon_sharp,
-            color: Colors.white,
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MusicConfigScreen())
+              );
+            },
+            icon: Icon(
+              Icons.catching_pokemon_sharp,
+              color: Colors.white,
+            ),
           ),
           SizedBox(width: 12,)
         ],

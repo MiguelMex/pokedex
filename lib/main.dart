@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pokedex/helpers/audio_helper.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'package:pokedex/screens/title_screen.dart';
+import 'package:pokedex/screens/title_screen_Animated.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
@@ -125,7 +126,7 @@ class MyApp extends StatelessWidget {
           thickness: 1,
         ),
       ),
-      home: const TitleScreen(),
+      home: const TitleScreenAnimated(),
     );
   }
 }
