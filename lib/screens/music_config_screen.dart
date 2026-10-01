@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pokedex/helpers/audio_helper.dart';
+import 'package:pokedex/helpers/storage_helper.dart';
 import 'package:pokedex/main.dart';
+import 'package:pokedex/models/app_settings.dart';
 
 class MusicConfigScreen extends StatefulWidget {
   const MusicConfigScreen({super.key});
@@ -11,18 +13,28 @@ class MusicConfigScreen extends StatefulWidget {
 }
 
 class _MusicConfigScreenState extends State<MusicConfigScreen> {
+  static const String _settingsFile = 'settings.json';
+
   List<String> songAssetsList = [];
   String? selectedSong;
   bool _isLoading = true;
+
+  final StorageHelper _storage = StorageHelper();
 
   Future<void> _initSongs() async{
     final assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final songs = assetManifest.listAssets().where((path) => path.startsWith("assets/audio/music")).toList();
 
+    //Get song from settings
+    final settingsJson = await _storage.readJson(_settingsFile);
+    final settings = AppSettings.fromJson(settingsJson);
+
+    final savedPath = 'assets/${settings.background_song}';
+
     if(!mounted) return;
     setState(() {
       songAssetsList = songs;
-      selectedSong = songs.isNotEmpty ? songs.first : null;
+      selectedSong = songs.contains(savedPath) ? savedPath : (songs.isNotEmpty ? songs.first : null);
       _isLoading = false;
     });
   }
@@ -35,6 +47,24 @@ class _MusicConfigScreenState extends State<MusicConfigScreen> {
 
     return withoutExt;
 
+  }
+
+  void _applySelection(String assetPath) async{
+    final audioSourcePath = assetPath.replaceFirst('assets/', '');
+
+    final exisitingJson = await _storage.readJson(_settingsFile);
+    final settings = AppSettings.fromJson(exisitingJson).copyWith(background_song: audioSourcePath);
+    await _storage.writeJson(_settingsFile, settings.toJson());
+
+    final newData = await _storage.readJson(_settingsFile);
+    final newDataFormated = AppSettings.fromJson(newData);
+    debugPrint('New Data: ${newDataFormated.background_song}');
+
+    try {
+      AudioHelper.instance.playBackgroundAudio(audioSourcePath);
+    } catch (e) {
+      debugPrint('Failed at playing song');
+    }
   }
 
   @override
@@ -56,7 +86,7 @@ class _MusicConfigScreenState extends State<MusicConfigScreen> {
           SizedBox(width: 12,)
         ],
         title: Text(
-          'Opciones de auido',
+          'Opciones de audio',
           style: TextStyle(
             color: kBlackSoft,
             fontWeight: FontWeight.bold,
@@ -117,8 +147,12 @@ class _MusicConfigScreenState extends State<MusicConfigScreen> {
                       }).toList(),
                       onChanged: (value) {
                         setState(() {
+                          if(value == null) return;
+                          setState(() {
+                            selectedSong = value;
+                          });
                           selectedSong = value;
-                          AudioHelper.instance.playBackgroundAudio('audio/music/${_prettyName(selectedSong!)}.mp3');
+                          _applySelection(value);
                         });
                       }
                     )

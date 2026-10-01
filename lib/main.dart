@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:pokedex/helpers/audio_helper.dart';
+import 'package:pokedex/helpers/storage_helper.dart';
+import 'package:pokedex/models/app_settings.dart';
 import 'package:pokedex/providers/poke_api_provider.dart';
 import 'package:pokedex/screens/title_screen.dart';
 import 'package:pokedex/screens/title_screen_Animated.dart';
 import 'package:provider/provider.dart';
 
+const String _settingsFile = 'settings.json';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await  AudioHelper.instance.init();
-  debugPrint('After init, bg state= ${AudioHelper.instance}');
-  await AudioHelper.instance.playBackgroundAudio('audio/02-title-screen.mp3');
-  debugPrint('After play call');
+  final storage = StorageHelper();
+
+  final settingsJson = await storage.readJson(_settingsFile);
+  final settings = AppSettings.fromJson(settingsJson);
+  debugPrint('Settings file is: ${settings.background_song}');
+
+  try{
+    await AudioHelper.instance.playBackgroundAudio(settings.background_song);
+  } catch (e) {
+    debugPrint('Could not start background audio: $e');
+  }
+  
   runApp(const AppState());
 }
 
