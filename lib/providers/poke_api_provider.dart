@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pokedex/models/auth_response.dart';
 import 'package:pokedex/models/pokemon_detail_response.dart';
 
 class PokeApiProvider extends ChangeNotifier {
@@ -94,5 +96,85 @@ class PokeApiProvider extends ChangeNotifier {
       throw HttpException('Ability $identifier failed (${response.statusCode})');
     }
     return response;
+  }
+}
+
+//______Credenciales de usuario______
+
+class AuthProvider extends ChangeNotifier{
+  String? token;
+  bool cargando = false;
+  String? error;
+
+  final String _baseUrl = "BackPokemon.somee.com";
+
+  Future<bool> login(String userName, String password) async{
+    cargando = true;
+    error = null;
+    notifyListeners(); //notifica
+
+    try{
+      final url = Uri.http(_baseUrl, '/api/Auth/login');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userName': userName, 'password': password}),
+      );
+
+      if(response.statusCode == 200){
+        final loginResponse = LoginResponse.fromJson(jsonDecode(response.body));
+        token = loginResponse.token;
+        cargando = false;
+        notifyListeners();
+        return true;
+      } else {
+        error = 'No se pudo iniciar sesion (${response.statusCode})';
+        cargando = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e){
+      error = 'Error de conexion: $e';
+      cargando = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> register(String userName, String email, String password) async{
+    cargando = true;
+    error = null;
+    notifyListeners();
+
+    try{
+      final url = Uri.http(_baseUrl, '/api/Auth/register');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userName': userName,
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if(response.statusCode == 200){
+        RegisterResponse.fromJson(jsonDecode(response.body));
+        cargando = false;
+        notifyListeners();
+        return true;
+
+      } else {
+        error = 'No se puede registrar (${response.statusCode}): ${response.body}';
+        cargando = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      error = 'Error de conexion: $e';
+      cargando = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

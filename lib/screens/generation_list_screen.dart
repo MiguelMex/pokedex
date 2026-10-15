@@ -54,10 +54,6 @@ class GenerationListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: Icon(
-            Icons.catching_pokemon_sharp,
-            color: Colors.white,
-          ),
         actions: [
           IconButton(
             onPressed: () {

@@ -37,6 +37,10 @@ class AppState extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => PokeApiProvider(),
           lazy: false,
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
+          lazy: false
         )
       ],
       child: MyApp(),

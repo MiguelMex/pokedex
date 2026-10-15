@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pokedex/helpers/audio_helper.dart';
 import 'package:pokedex/main.dart';
+import 'package:pokedex/screens/dashboard_screen.dart';
 import 'package:pokedex/screens/generation_list_screen.dart';
 import 'dart:math' as math;
 
@@ -30,7 +31,7 @@ class _TitleScreenAnimatedState extends State<TitleScreenAnimated> {
     if(!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const GenerationListScreen()),
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
     );
   }
 
